@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import Link from "next/link";
 import Rating from "./Rating";
 import QuantitySelector from "./QuantitySelector";
@@ -11,6 +11,17 @@ const ProductCard = ({ product }) => {
   // État local pour afficher ou masquer le sélecteur de quantité
   const [showQuantitySelector, setShowQuantitySelector] = useState(false);
   const [quantity, setQuantity] = useState(1);
+
+  // Check if the product is already in the cart when the component mounts
+  useEffect(() => {
+    const existingItem = cartItems.find(
+      (item) => item.product._id === product._id
+    );
+    if (existingItem) {
+      setShowQuantitySelector(true); // Show quantity selector if item is in the cart
+      setQuantity(existingItem.quantity); // Set the quantity from the cart
+    }
+  }, [cartItems, product._id]);
 
   // Ajouter un produit au panier
   const handleAddToCart = () => {
@@ -55,6 +66,8 @@ const ProductCard = ({ product }) => {
           <div className="py-2 md:py-2 w-full">
             <QuantitySelector
               product={product}
+              quantity={quantity} // Pass the current quantity to the selector
+              onQuantityChange={(newQuantity) => setQuantity(newQuantity)}
               showQuantitySelector={showQuantitySelector}
               onToggleQuantitySelector={
                 () => setShowQuantitySelector(false) // Masquer le sélecteur après sélection

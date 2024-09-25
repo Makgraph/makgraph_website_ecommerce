@@ -9,12 +9,20 @@ const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [shippingAddress, setShippingAddress] = useState({
+    address: "",
+    city: "",
+    postalCode: "",
+    country: "",
+  });
 
-  // Load cart from localStorage when the component mounts
+  // Load cart and shipping address from localStorage when the component mounts
   useEffect(() => {
-    // Ensure the code runs only on the client (avoiding SSR issues)
     if (typeof window !== "undefined") {
       const storedCart = localStorage.getItem("cart");
+      const storedShippingAddress = localStorage.getItem("shippingAddress");
+
       if (storedCart) {
         try {
           const parsedCart = JSON.parse(storedCart);
@@ -25,24 +33,34 @@ export const CartProvider = ({ children }) => {
           console.error("Failed to parse cart from localStorage:", error);
         }
       }
+
+      if (storedShippingAddress) {
+        try {
+          const parsedShippingAddress = JSON.parse(storedShippingAddress);
+          setShippingAddress(parsedShippingAddress);
+        } catch (error) {
+          console.error("Failed to parse shipping address:", error);
+        }
+      }
     }
   }, []);
 
-  // Save cart to localStorage whenever it updates
+  // Save cart and shipping address to localStorage whenever they update
   useEffect(() => {
     if (cartItems.length > 0) {
       localStorage.setItem("cart", JSON.stringify(cartItems));
     } else {
-      // Clear localStorage if cart is empty
       localStorage.removeItem("cart");
     }
-    // Recalculate total price
+
+    localStorage.setItem("shippingAddress", JSON.stringify(shippingAddress));
+
     const price = cartItems.reduce(
       (acc, item) => acc + item.product.price * item.quantity,
       0
     );
     setTotalPrice(price);
-  }, [cartItems]);
+  }, [cartItems, shippingAddress]);
 
   // Function to add item to cart
   const addToCart = (product, quantity) => {
@@ -51,7 +69,6 @@ export const CartProvider = ({ children }) => {
     );
 
     if (existingItem) {
-      // Update quantity if the item is already in the cart
       setCartItems(
         cartItems.map((item) =>
           item.product._id === product._id
@@ -60,7 +77,6 @@ export const CartProvider = ({ children }) => {
         )
       );
     } else {
-      // Add new item to the cart
       setCartItems([...cartItems, { product, quantity }]);
     }
   };
@@ -81,12 +97,20 @@ export const CartProvider = ({ children }) => {
     setCartItems(cartItems.filter((item) => item.product._id !== productId));
   };
 
+  // Function to update the shipping address
+  const updateShippingAddress = (newAddress) => {
+    setShippingAddress(newAddress);
+  };
+
+  // Function to update payment method
+  const updatePaymentMethod = (method) => {
+    setPaymentMethod(method);
+  };
   // Calculate total quantity of items in the cart
   const totalQuantity = useMemo(() => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
   }, [cartItems]);
 
-  // Return the provider with values
   return (
     <CartContext.Provider
       value={{
@@ -96,6 +120,10 @@ export const CartProvider = ({ children }) => {
         removeFromCart,
         totalQuantity,
         totalPrice,
+        shippingAddress,
+        updateShippingAddress,
+        paymentMethod, // Expose payment method
+        updatePaymentMethod,
       }}
     >
       {children}

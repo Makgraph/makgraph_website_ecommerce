@@ -2,21 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { IonIcon } from "@ionic/react";
 import { close } from "ionicons/icons";
 import { arrowBack } from "ionicons/icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Star, StarHalf, UserCircle } from "phosphor-react";
-import {
-  ArrowArcLeft,
-  ArrowCircleDownLeft,
-  ArrowCircleLeft,
-} from "phosphor-react";
 import { useCart } from "@components/context/CartContext";
 import LoadingSpinner from "./../../components/LoadingSpinner";
 
 const CartScreen = () => {
+  const { data: session } = useSession();
   const router = useRouter();
   const { cartItems, removeFromCart, updateCartQuantity, totalPrice } =
     useCart();
@@ -42,7 +37,7 @@ const CartScreen = () => {
   };
 
   const handleCheckout = () => {
-    if (isLoggedIn) {
+    if (session) {
       router.push("/shipping");
     } else {
       router.push("/signin");
