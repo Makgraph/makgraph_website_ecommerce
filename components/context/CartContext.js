@@ -17,11 +17,12 @@ export const CartProvider = ({ children }) => {
     country: "",
   });
 
-  // Load cart and shipping address from localStorage when the component mounts
+  // Load cart, shipping address, and payment method from localStorage when the component mounts
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedCart = localStorage.getItem("cart");
       const storedShippingAddress = localStorage.getItem("shippingAddress");
+      const storedPaymentMethod = localStorage.getItem("paymentMethod");
 
       if (storedCart) {
         try {
@@ -37,15 +38,29 @@ export const CartProvider = ({ children }) => {
       if (storedShippingAddress) {
         try {
           const parsedShippingAddress = JSON.parse(storedShippingAddress);
-          setShippingAddress(parsedShippingAddress);
+          setShippingAddress(
+            parsedShippingAddress || {
+              address: "",
+              city: "",
+              postalCode: "",
+              country: "",
+            }
+          );
         } catch (error) {
-          console.error("Failed to parse shipping address:", error);
+          console.error(
+            "Failed to parse shipping address from localStorage:",
+            error
+          );
         }
+      }
+
+      if (storedPaymentMethod) {
+        setPaymentMethod(storedPaymentMethod);
       }
     }
   }, []);
 
-  // Save cart and shipping address to localStorage whenever they update
+  // Save cart, shipping address, and payment method to localStorage whenever they update
   useEffect(() => {
     if (cartItems.length > 0) {
       localStorage.setItem("cart", JSON.stringify(cartItems));
@@ -53,14 +68,30 @@ export const CartProvider = ({ children }) => {
       localStorage.removeItem("cart");
     }
 
-    localStorage.setItem("shippingAddress", JSON.stringify(shippingAddress));
+    // Only save shipping address if it contains non-empty values
+    if (
+      shippingAddress?.address ||
+      shippingAddress?.city ||
+      shippingAddress?.postalCode ||
+      shippingAddress?.country
+    ) {
+      localStorage.setItem("shippingAddress", JSON.stringify(shippingAddress));
+    } else {
+      localStorage.removeItem("shippingAddress");
+    }
+
+    if (paymentMethod) {
+      localStorage.setItem("paymentMethod", paymentMethod);
+    } else {
+      localStorage.removeItem("paymentMethod");
+    }
 
     const price = cartItems.reduce(
       (acc, item) => acc + item.product.price * item.quantity,
       0
     );
     setTotalPrice(price);
-  }, [cartItems, shippingAddress]);
+  }, [cartItems, shippingAddress, paymentMethod]);
 
   // Function to add item to cart
   const addToCart = (product, quantity) => {
@@ -97,6 +128,11 @@ export const CartProvider = ({ children }) => {
     setCartItems(cartItems.filter((item) => item.product._id !== productId));
   };
 
+  // Function to clear the cart
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
   // Function to update the shipping address
   const updateShippingAddress = (newAddress) => {
     setShippingAddress(newAddress);
@@ -106,6 +142,7 @@ export const CartProvider = ({ children }) => {
   const updatePaymentMethod = (method) => {
     setPaymentMethod(method);
   };
+
   // Calculate total quantity of items in the cart
   const totalQuantity = useMemo(() => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -118,11 +155,12 @@ export const CartProvider = ({ children }) => {
         addToCart,
         updateCartQuantity,
         removeFromCart,
+        clearCart,
         totalQuantity,
         totalPrice,
         shippingAddress,
         updateShippingAddress,
-        paymentMethod, // Expose payment method
+        paymentMethod,
         updatePaymentMethod,
       }}
     >

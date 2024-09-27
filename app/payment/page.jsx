@@ -9,7 +9,7 @@ function PaymentScreen() {
 
   const submitHandler = (e) => {
     e.preventDefault();
-    router.push("/placeOrder");
+    router.push("/order");
   };
 
   return (
