@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ const OrderScreen = ({ params }) => {
   const { data: session } = useSession();
   const { id } = params;
   const router = useRouter();
-  const {  clearCart } = useCart();
+  const { resetCart } = useCart();
   const [sdkReady, setSdkReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState(null);
@@ -34,7 +34,7 @@ const OrderScreen = ({ params }) => {
         console.log(data);
         setOrder(data);
         // Clear the cart once the order is fetched successfully
-        clearCart();
+        resetCart();
       } catch (err) {
         setError(err.message);
       } finally {
@@ -43,7 +43,7 @@ const OrderScreen = ({ params }) => {
     };
 
     fetchOrderDetails();
-  }, [id, order]);
+  }, [id, order, resetCart]);
 
   useEffect(() => {
     const addPayPalScript = async () => {
@@ -104,6 +104,15 @@ const OrderScreen = ({ params }) => {
     await updateOrderPayment(details);
   };
 
+  // Reset all states on logout
+  useEffect(() => {
+    if (!session) {
+      resetCart(); // Reset all cart-related states on logout
+      setOrder(null); // Reset order state
+      setError(null); // Reset error state
+    }
+  }, [session, resetCart]);
+
   if (loading) return <LoadingSpinner />;
   if (error)
     return (
@@ -111,7 +120,7 @@ const OrderScreen = ({ params }) => {
         {error}
       </Message>
     );
-  console.log(order);
+
   if (!order) {
     return <Message variant="bg-danger text-white">Order not found</Message>;
   }

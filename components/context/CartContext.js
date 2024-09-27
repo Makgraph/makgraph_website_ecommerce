@@ -62,29 +62,22 @@ export const CartProvider = ({ children }) => {
 
   // Save cart, shipping address, and payment method to localStorage whenever they update
   useEffect(() => {
-    if (cartItems.length > 0) {
-      localStorage.setItem("cart", JSON.stringify(cartItems));
-    } else {
-      localStorage.removeItem("cart");
-    }
-
-    // Only save shipping address if it contains non-empty values
-    if (
-      shippingAddress?.address ||
-      shippingAddress?.city ||
-      shippingAddress?.postalCode ||
-      shippingAddress?.country
-    ) {
-      localStorage.setItem("shippingAddress", JSON.stringify(shippingAddress));
-    } else {
-      localStorage.removeItem("shippingAddress");
-    }
-
-    if (paymentMethod) {
-      localStorage.setItem("paymentMethod", paymentMethod);
-    } else {
-      localStorage.removeItem("paymentMethod");
-    }
+    localStorage.setItem(
+      "cart",
+      JSON.stringify(cartItems.length > 0 ? cartItems : [])
+    );
+    localStorage.setItem(
+      "shippingAddress",
+      JSON.stringify(
+        shippingAddress.address ||
+          shippingAddress.city ||
+          shippingAddress.postalCode ||
+          shippingAddress.country
+          ? shippingAddress
+          : {}
+      )
+    );
+    localStorage.setItem("paymentMethod", paymentMethod || "");
 
     const price = cartItems.reduce(
       (acc, item) => acc + item.product.price * item.quantity,
@@ -148,6 +141,21 @@ export const CartProvider = ({ children }) => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
   }, [cartItems]);
 
+  // Reset cart state (e.g., on logout)
+  const resetCart = () => {
+    clearCart();
+    setShippingAddress({
+      address: "",
+      city: "",
+      postalCode: "",
+      country: "",
+    });
+    setPaymentMethod("");
+    localStorage.removeItem("cart");
+    localStorage.removeItem("shippingAddress");
+    localStorage.removeItem("paymentMethod");
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -156,6 +164,7 @@ export const CartProvider = ({ children }) => {
         updateCartQuantity,
         removeFromCart,
         clearCart,
+        resetCart, // Expose reset function
         totalQuantity,
         totalPrice,
         shippingAddress,
