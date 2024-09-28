@@ -66,7 +66,7 @@ const Dropdown = () => {
         <ul className="absolute mt-1 w-24 md:w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
           <li>
             <Link
-              href="/"
+              href="/profile"
               className="block py-2 px-4 font-serif text-xs md:text-sm text-[#374151] hover:bg-primary hover:text-onPrimary"
             >
               Profil

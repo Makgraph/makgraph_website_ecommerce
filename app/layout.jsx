@@ -25,9 +25,9 @@ export default function RootLayout({ children }) {
         <Provider>
           <CartProvider>
             <SearchProvider>
-            <Header />
-            <main>{children}</main>
-            <ToastContainer />
+              <Header />
+              <main>{children}</main>
+              <ToastContainer />
             </SearchProvider>
           </CartProvider>
         </Provider>

@@ -53,7 +53,25 @@ export async function POST(req) {
 }
 
 export async function GET(req) {
-  return new Response(JSON.stringify({ message: "Method not allowed" }), {
-    status: 405,
-  });
+  try {
+    await connectToDB();
+    const session = await getServerSession({ req, ...authOptions });
+
+    if (!session) {
+      return new Response(JSON.stringify({ message: "Not authenticated" }), {
+        status: 401,
+      });
+    }
+
+    const orders = await Order.find({ user: session.user.id })
+      .sort({ createdAt: -1 })
+      .populate("user", "id name email");
+
+    return new Response(JSON.stringify(orders), { status: 200 });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return new Response(JSON.stringify({ message: "Internal server error" }), {
+      status: 500,
+    });
+  }
 }

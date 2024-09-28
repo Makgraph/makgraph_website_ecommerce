@@ -1,59 +1,39 @@
 import { connectToDB } from "@utils/database";
-import Order from "@/models/order";
-import { getSession } from "next-auth/react";
+import GalleryItem from "@/models/gallery"; // Adjust the import based on your model
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]/route";
 
-export default async function handler(req, res) {
-  if (req.method === "POST") {
-    try {
-      // Connect to the database
-      await connectToDB();
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const pageNumber = searchParams.get("pageNumber") || 1;
+  const keyword = searchParams.get("keyword") || "";
+  const category = searchParams.get("category") || "";
 
-      // Retrieve the session (user info)
-      const session = await getSession({ req });
-      if (!session) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+  try {
+    await connectToDB();
 
-      // Destructure the request body
-      const {
-        orderItems,
-        shippingAddress,
-        paymentMethod,
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        totalPrice,
-      } = req.body;
-
-      // Validate that there are order items
-      if (!orderItems || orderItems.length === 0) {
-        return res.status(400).json({ message: "No items in the order" });
-      }
-
-      // Create a new order
-      const newOrder = new Order({
-        orderItems,
-        user: session.user.id, // Assuming session user has an 'id' field
-        shippingAddress,
-        paymentMethod,
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        totalPrice,
-      });
-
-      // Save the order to the database
-      const createdOrder = await newOrder.save();
-
-      // Send back the newly created order
-      return res.status(201).json(createdOrder);
-    } catch (error) {
-      // Handle any errors during order creation
-      console.error("Error creating order:", error);
-      return res.status(500).json({ message: "Internal server error" });
+    const query = {};
+    if (keyword) {
+      query.name = { $regex: keyword, $options: "i" }; // Example regex for keyword search
     }
-  } else {
-    // If the method is not POST, return an error
-    return res.status(405).json({ message: "Method not allowed" });
+    if (category) {
+      query.category = category;
+    }
+
+    const itemsPerPage = 4;
+    const items = await GalleryItem.find(query)
+      .skip((pageNumber - 1) * itemsPerPage)
+      .limit(itemsPerPage);
+    const totalItems = await GalleryItem.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    return new Response(JSON.stringify({ items, totalPages }), {
+      status: 200,
+    });
+  } catch (error) {
+    console.error("Error fetching gallery items:", error);
+    return new Response(JSON.stringify({ message: "Internal server error" }), {
+      status: 500,
+    });
   }
 }
